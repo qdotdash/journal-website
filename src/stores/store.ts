@@ -1,5 +1,6 @@
 import { formattedCurrentDate, generatePageId } from '@/utils/utils'
-import { createStore } from 'vuex'
+import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 
 interface _Page {
   id: string
@@ -10,11 +11,6 @@ interface _Page {
 
 export type Page = Omit<_Page, 'id'>
 
-interface State {
-  pages: _Page[]
-  pageNumber: number
-}
-
 const getDefaultPage = (): _Page => {
   return {
     id: generatePageId().toString(),
@@ -24,47 +20,40 @@ const getDefaultPage = (): _Page => {
   }
 }
 
-const store = createStore<State>({
-  state() {
-    return {
-      pages: [],
-      pageNumber: 0
+export const useJournalStore = defineStore('journal-page', () => {
+  const pages = ref<_Page[]>([])
+  const latestPageNumber = computed(() => pages.value.length)
+
+  const addPage = (page: Page) => {
+    const newPage: _Page = {
+      id: generatePageId().toString(),
+      pageNumber: page.pageNumber,
+      date: page.date,
+      text: page.text
     }
-  },
-  mutations: {
-    addPage(state, page: Page) {
-      if (state.pageNumber + 1 === page.pageNumber) {
-        state.pages.push({ ...page, id: generatePageId().toString() })
-        state.pageNumber++
-      } else if (state.pageNumber >= page.pageNumber) {
-        const targetPageNumber = page.pageNumber
-        const index = state.pages.findIndex((_page) => _page.pageNumber === targetPageNumber)
-        if (index >= 0) {
-          state.pages[index].text = page.text
-        }
-      }
+    if (page.pageNumber > latestPageNumber.value) {
+      pages.value.push(newPage)
+    } else {
+      pages.value[page.pageNumber - 1] = newPage
     }
-  },
-  actions: {
-    addPage(context, page) {
-      context.commit('addPage', page)
+    console.log('Adding page')
+    console.log({ pages: pages.value, latestPageNumber: latestPageNumber.value })
+  }
+
+  const getPageByPageNumber = (pageNumber: number): Page | undefined => {
+    if (pageNumber < 1 || pageNumber > latestPageNumber.value) {
+      return undefined
     }
-  },
-  getters: {
-    getPageByPageNumber:
-      (state) =>
-      (pageNumber: number): Page | undefined => {
-        return state.pages.find((page) => page.pageNumber === pageNumber)
-      },
-    getLatestPage: (state) => {
-      const [lastPage] = state.pages.slice(-1)
-      if (lastPage) {
-        return lastPage
-      }
-      const defaultPage = getDefaultPage()
-      return defaultPage
-    }
+    return pages.value.find((page) => page.pageNumber === pageNumber)
+  }
+
+  const getLatestPage = (): Page => {
+    return pages.value[latestPageNumber.value] || getDefaultPage()
+  }
+
+  return {
+    addPage,
+    getPageByPageNumber,
+    getLatestPage
   }
 })
-
-export default store
