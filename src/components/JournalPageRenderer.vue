@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import type { Page } from '@/stores/store'
+import { useJournalStore } from '@/stores/store'
 import { formattedCurrentDate } from '@/utils/utils'
 import { onMounted, onUnmounted, ref } from 'vue'
-import { useStore } from 'vuex'
 import JournalPage from './JournalPage.vue'
 
-const store = useStore()
+const { addPage, getPageByPageNumber, getLatestPage } = useJournalStore()
 
 const pageNumber = ref<number>(1)
 const pageText = ref<string>('')
 const pageDate = ref<string>(formattedCurrentDate())
 
 onMounted(() => {
-  const latestPage = store.getters.getLatestPage
+  const latestPage = getLatestPage()
   window.addEventListener('keyup', goToPreviousPage)
   window.addEventListener('keydown', goToNextPage)
 
@@ -26,42 +25,23 @@ onUnmounted(() => {
   window.removeEventListener('keydown', goToNextPage)
 })
 
-// onUnmounted(() => {
-//   addPage({
-//     id: Math.random().toString(),
-//     pageNumber: pageNumber.value,
-//     text: pageText.value,
-//     pageDate: pageDate.value
-//   })
-// })
-
-const addPage = (page: Page) => {
-  store.dispatch('addPage', page)
-}
-
 const goToPreviousPage = (e: KeyboardEvent) => {
-  if (pageNumber.value === 1 || e.key !== 'ArrowUp') {
+  if (e.key !== 'ArrowUp') {
     return
   }
-  console.log(pageNumber.value, store.state.pages)
-  const currentPage = store.state.pages[pageNumber.value - 2]
-  pageNumber.value--
-  pageText.value = currentPage.text
-  pageDate.value = currentPage.date
+  const currentPage = getPageByPageNumber(pageNumber.value - 1)
+  if (currentPage) {
+    pageNumber.value--
+    pageText.value = currentPage.text
+    pageDate.value = currentPage.date
+  }
 }
 
 const goToNextPage = (e: KeyboardEvent) => {
-  if (pageNumber.value > store.state.pageNumber || e.key !== 'ArrowDown') {
+  if (e.key !== 'ArrowDown') {
     return
   }
-  let currentPage = undefined
-  // remove this code once handling is done
-  if (pageNumber.value === store.state.pageNumber) {
-    currentPage = { pageNumber: pageNumber.value + 1, text: '', date: '01 Jan, 0000' }
-  } else {
-    currentPage = store.state.pages[pageNumber.value + 1]
-  }
-  //////////////////////////////////////////
+  const currentPage = getPageByPageNumber(pageNumber.value + 1)
   if (currentPage) {
     pageNumber.value++
     pageText.value = currentPage.text
@@ -69,13 +49,21 @@ const goToNextPage = (e: KeyboardEvent) => {
   }
 }
 
-const onPageOverFlow = (remnantText: string, text: string) => {
+const onTextChange = (text: string) => {
   addPage({
     pageNumber: pageNumber.value,
     text,
     date: pageDate.value
   })
-  console.log(store.state.pages)
+}
+
+const onPageOverFlow = (remnantText: string, text: string) => {
+  console.log("Calling add page")
+  addPage({
+    pageNumber: pageNumber.value,
+    text,
+    date: pageDate.value
+  })
 
   pageNumber.value++
   pageText.value = remnantText
@@ -86,6 +74,7 @@ const onPageOverFlow = (remnantText: string, text: string) => {
   <div class="container">
     <JournalPage
       @page-overflow="onPageOverFlow"
+      @on-text-change="onTextChange"
       :pageNumber="pageNumber"
       :pageText="pageText"
       :pageDate="pageDate"

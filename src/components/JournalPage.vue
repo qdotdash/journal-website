@@ -1,30 +1,41 @@
 <script setup lang="ts">
+import { isTextAreaOverflowing } from '@/utils/utils'
 import { ref } from 'vue'
 
-const emits = defineEmits(['page-overflow'])
+const emits = defineEmits(['page-overflow', 'on-text-change'])
 
 defineProps(['pageNumber', 'pageText', 'pageDate'])
 
 const textareaRef = ref<HTMLInputElement>()
-const remnantText = ref('')
+const lastNonOverFlowIndex = ref(-1)
+
+const handlePageOverFlow = (text: string) => {
+  const length = text.length
+  for (let i = lastNonOverFlowIndex.value + 2; i <= length; i++) {
+    console.log(isTextAreaOverflowing(text.substring(0, i), textareaRef.value), ' overflow test')
+    if (isTextAreaOverflowing(text.substring(0, i), textareaRef.value)) {
+      emits('page-overflow', text.substring(i, length), text.substring(0, i))
+      return
+    }
+  }
+}
 
 const onTextAreaInputChange = () => {
   const textarea = textareaRef?.value
-  if(textarea && textarea.value.length > 1600){
-    emits('page-overflow', remnantText.value, textarea.value)
+  console.log('textarea', textarea)
+  // emits('on-text-change', textarea?.value)
+  if (
+    textarea &&
+    textarea.scrollHeight &&
+    textarea.offsetHeight &&
+    textarea.scrollHeight > textarea.offsetHeight
+  ) {
+    handlePageOverFlow(textarea.value)
+  } else {
+    if (textarea) {
+      lastNonOverFlowIndex.value = textarea.value.length - 1
+    }
   }
-  // if (
-  //   textarea &&
-  //   textarea.scrollHeight &&
-  //   textarea.offsetHeight &&
-  //   textarea.scrollHeight > textarea.offsetHeight
-  // ) {
-  //   if (textarea.value.slice(-1) !== ' ' && textarea.value.split(' ').length !== 1) {
-  //     remnantText.value = textarea.value.split(' ').pop() || ''
-  //   }
-  //   emits('page-overflow', remnantText.value, textarea.value)
-  // }
-  console.log(textarea?.value.length)
 }
 </script>
 
