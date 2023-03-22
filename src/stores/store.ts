@@ -36,8 +36,7 @@ export const useJournalStore = defineStore('journal-page', () => {
     } else {
       pages.value[page.pageNumber - 1] = newPage
     }
-    console.log('Adding page')
-    console.log({ pages: pages.value, latestPageNumber: latestPageNumber.value })
+    console.log('Adding page', { pages: pages.value, latestPageNumber: latestPageNumber.value })
   }
 
   const getPageByPageNumber = (pageNumber: number): Page | undefined => {

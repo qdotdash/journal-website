@@ -6,57 +6,29 @@ const emits = defineEmits(['page-overflow', 'on-text-change'])
 defineProps(['pageNumber', 'pageText', 'pageDate'])
 
 const textareaRef = ref<HTMLInputElement>()
-const lastNonOverFlowIndex = ref(-1)
 
-const isTextAreaOverflowing = (text: string) => {
-  const textarea = textareaRef?.value
+const onTextAreaOverFlow = (e: UIEvent) => {
+  const textarea = textareaRef.value
   if (!textarea) {
     return
   }
-  const div = document.createElement('div')
-  div.style.position = 'absolute'
-  div.style.visibility = 'hidden'
-  div.style.width = textarea.offsetWidth + 'px'
-  div.style.height = textarea.offsetHeight + 'px'
-  div.style.font = getComputedStyle(textarea).font
-  div.style.fontSize = getComputedStyle(textarea).fontSize
-  div.style.overflow = 'hidden'
+  const event = e as UIEvent & { target: HTMLTextAreaElement }
 
-  div.textContent = text
-  document.body.appendChild(div)
-
-  const isOverflowing = div.scrollHeight > div.offsetHeight
-
-  document.body.removeChild(div)
-
-  return isOverflowing
+  let nextPageText = ''
+  let currentPageText = event.target.value
+  let scrollTop = event.target.scrollTop
+  while (scrollTop > 0) {
+    nextPageText += currentPageText[currentPageText.length - 1]
+    currentPageText = currentPageText.slice(0, -1)
+    textarea.value = currentPageText
+    scrollTop = textarea.scrollTop
+  }
+  emits('page-overflow', nextPageText, currentPageText);
 }
 
-const handlePageOverFlow = (text: string) => {
-  const length = text.length
-  for (let i = lastNonOverFlowIndex.value + 2; i <= length; i++) {
-    if (isTextAreaOverflowing(text.substring(0, i))) {
-      emits('page-overflow', text.substring(i, length), text.substring(0, i))
-      return
-    }
-  }
-}
-
-const onTextAreaInputChange = () => {
-  const textarea = textareaRef?.value
-  emits('on-text-change', textarea?.value)
-  if (
-    textarea &&
-    textarea.scrollHeight &&
-    textarea.offsetHeight &&
-    textarea.scrollHeight > textarea.offsetHeight
-  ) {
-    handlePageOverFlow(textarea.value)
-  } else {
-    if (textarea) {
-      lastNonOverFlowIndex.value = textarea.value.length - 1
-    }
-  }
+const onTextAreaInputChange = (e: Event) => {
+  const event = e as Event & { target: HTMLTextAreaElement }
+  emits('on-text-change', event.target.value)
 }
 </script>
 
@@ -65,6 +37,7 @@ const onTextAreaInputChange = () => {
     <div class="date">{{ pageDate }}</div>
     <textarea
       ref="textareaRef"
+      @scroll="onTextAreaOverFlow"
       placeholder="Start journaling..."
       @input="onTextAreaInputChange"
       id="journal-textarea"
