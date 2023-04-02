@@ -5,14 +5,14 @@ import { onMounted, onUnmounted, ref } from 'vue'
 
 import JournalPage from './JournalPage.vue'
 
-const { addPage, getLatestPage, getPageByPageNumber } = useJournalStore()
+const store = useJournalStore()
 
 const pageNumber = ref<number>(1)
 const pageText = ref<string>('')
 const pageDate = ref<string>(formattedCurrentDate())
 
 onMounted(() => {
-  const latestPage = getLatestPage()
+  const latestPage = store.getLatestPage()
   window.addEventListener('keyup', goToPreviousPage)
   window.addEventListener('keydown', goToNextPage)
 
@@ -30,9 +30,9 @@ const goToPreviousPage = (e: KeyboardEvent) => {
   if (e.key !== 'ArrowUp') {
     return
   }
-  const currentPage = getPageByPageNumber(pageNumber.value - 1)
+  const currentPage = store.getPageByPageNumber(pageNumber.value - 1)
   if (currentPage) {
-    pageNumber.value--
+    pageNumber.value = currentPage.pageNumber
     pageText.value = currentPage.text
     pageDate.value = currentPage.date
   }
@@ -42,16 +42,16 @@ const goToNextPage = (e: KeyboardEvent) => {
   if (e.key !== 'ArrowDown') {
     return
   }
-  const currentPage = getPageByPageNumber(pageNumber.value + 1)
+  const currentPage = store.getPageByPageNumber(pageNumber.value + 1)
   if (currentPage) {
-    pageNumber.value++
+    pageNumber.value = currentPage.pageNumber
     pageText.value = currentPage.text
     pageDate.value = currentPage.date
   }
 }
 
 const onTextChange = (text: string) => {
-  addPage({
+  store.addPage({
     pageNumber: pageNumber.value,
     text,
     date: pageDate.value
@@ -59,13 +59,17 @@ const onTextChange = (text: string) => {
 }
 
 const onPageOverFlow = (remnantText: string, text: string) => {
-  addPage({
+  store.addPage({
     pageNumber: pageNumber.value,
     text,
     date: pageDate.value
   })
-
-  pageNumber.value++
+  store.addPage({
+    pageNumber: pageNumber.value + 1,
+    text: remnantText,
+    date: pageDate.value
+  })
+  pageNumber.value = store.latestPageNumber
   pageText.value = remnantText
 }
 </script>

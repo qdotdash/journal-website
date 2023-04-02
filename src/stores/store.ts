@@ -1,6 +1,6 @@
 import { formattedCurrentDate, generatePageId } from '@/utils/utils'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 interface _Page {
   id: string
@@ -21,8 +21,19 @@ const getDefaultPage = (): _Page => {
 }
 
 export const useJournalStore = defineStore('journal-page', () => {
-  const pages = ref<_Page[]>([])
+  const defaultPagesValue = localStorage.getItem('pages')
+    ? JSON.parse(localStorage.getItem('pages') as string)
+    : []
+  const pages = ref<_Page[]>(defaultPagesValue)
   const latestPageNumber = computed(() => pages.value.length)
+
+  watch(
+    pages,
+    (pages) => {
+      localStorage.setItem('pages', JSON.stringify(pages))
+    },
+    { deep: true }
+  )
 
   const addPage = (page: Page) => {
     const newPage: _Page = {
@@ -47,12 +58,13 @@ export const useJournalStore = defineStore('journal-page', () => {
   }
 
   const getLatestPage = (): Page => {
-    return pages.value[latestPageNumber.value] || getDefaultPage()
+    return pages.value[latestPageNumber.value - 1] || getDefaultPage()
   }
 
   return {
     addPage,
     getPageByPageNumber,
-    getLatestPage
+    getLatestPage,
+    latestPageNumber
   }
 })

@@ -17,13 +17,16 @@ const onTextAreaOverFlow = (e: UIEvent) => {
   let nextPageText = ''
   let currentPageText = event.target.value
   let scrollTop = event.target.scrollTop
+  const isOverflowing = !!scrollTop
   while (scrollTop > 0) {
     nextPageText += currentPageText[currentPageText.length - 1]
     currentPageText = currentPageText.slice(0, -1)
     textarea.value = currentPageText
     scrollTop = textarea.scrollTop
   }
-  emits('page-overflow', nextPageText, currentPageText);
+  if (isOverflowing) {
+    emits('page-overflow', nextPageText.trim().split('').reverse().join(''), currentPageText)
+  }
 }
 
 const onTextAreaInputChange = (e: Event) => {
@@ -32,13 +35,14 @@ const onTextAreaInputChange = (e: Event) => {
 }
 </script>
 
+<!-- TODO Add the copy prevent directive -->
 <template>
   <div class="page-container">
     <div class="date">{{ pageDate }}</div>
     <textarea
       ref="textareaRef"
+      placeholder="Journal here..."
       @scroll="onTextAreaOverFlow"
-      placeholder="Start journaling..."
       @input="onTextAreaInputChange"
       id="journal-textarea"
       class="page-textarea"
