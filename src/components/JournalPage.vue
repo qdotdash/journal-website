@@ -1,51 +1,23 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
-const emits = defineEmits(['page-overflow', 'on-text-change'])
+const emits = defineEmits(['input'])
 
 defineProps(['pageNumber', 'pageText', 'pageDate'])
 
-const textareaRef = ref<HTMLInputElement>()
-
-const onTextAreaOverFlow = (e: UIEvent) => {
-  const textarea = textareaRef.value
-  if (!textarea) {
-    return
-  }
-  const event = e as UIEvent & { target: HTMLTextAreaElement }
-
-  let nextPageText = ''
-  let currentPageText = event.target.value
-  let scrollTop = event.target.scrollTop
-  const isOverflowing = !!scrollTop
-  while (scrollTop > 0) {
-    nextPageText += currentPageText[currentPageText.length - 1]
-    currentPageText = currentPageText.slice(0, -1)
-    textarea.value = currentPageText
-    scrollTop = textarea.scrollTop
-  }
-  if (isOverflowing) {
-    emits('page-overflow', nextPageText.trim().split('').reverse().join(''), currentPageText)
-  }
-}
-
-const onTextAreaInputChange = (e: Event) => {
-  const event = e as Event & { target: HTMLTextAreaElement }
-  emits('on-text-change', event.target.value)
+const onTextAreaInputChange = (event: Event) => {
+  const { value } = event.target as HTMLInputElement
+  emits('input', value)
 }
 </script>
 
-<!-- TODO Add the copy prevent directive -->
 <template>
   <div class="page-container">
     <div class="date">{{ pageDate }}</div>
     <textarea
-      ref="textareaRef"
-      placeholder="Journal here..."
-      @scroll="onTextAreaOverFlow"
-      @input="onTextAreaInputChange"
       id="journal-textarea"
       class="page-textarea"
+      ref="textareaRef"
+      placeholder="Journal here..."
+      @input="onTextAreaInputChange"
       :value="pageText"
     ></textarea>
     <div class="page-number">{{ pageNumber }}</div>

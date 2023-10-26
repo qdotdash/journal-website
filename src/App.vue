@@ -1,7 +1,5 @@
-<script setup lang="ts">
-import JournalPageRenderer from './components/JournalPageRenderer.vue'
-</script>
+<script setup lang="ts"></script>
 
 <template>
-  <JournalPageRenderer />
+  <RouterView />
 </template>
